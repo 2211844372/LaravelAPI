@@ -2,7 +2,8 @@
   <div class="main-wrapper">
     <header>
       <div class="logo">
-<img :src="'/assets/logo.png'" alt="جامعة طرابلس" />      </div>
+        <img :src="'/assets/logo.png'" alt="جامعة طرابلس" />
+      </div>
       <div class="title">
         <h1>نظام إدارة الكليات</h1>
       </div>
@@ -20,7 +21,14 @@
         </a>
       </div>
 
-      <div v-if="loading" class="text-center">
+      <div v-if="errorMessage" class="error-msg">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{ errorMessage }}</p>
+        <button @click="fetchColleges" class="btn-retry">إعادة المحاولة</button>
+      </div>
+
+      <div v-else-if="loading" class="text-center">
+        <div class="spinner"></div>
         <p>جاري جلب البيانات من الـ API...</p>
       </div>
 
@@ -28,9 +36,7 @@
         <div v-for="college in colleges" :key="college.id" class="college-card">
           <div class="card-content">
             <i :class="college.icon || 'fas fa-university'"></i>
-
             <h4>{{ college.name }}</h4>
-
             <p><strong><i class="fas fa-calendar-alt"></i> التأسيس:</strong> {{ college.founded_year || 'غير مسجل' }}</p>
             <p><strong><i class="fas fa-user-tie"></i> العميد:</strong> {{ college.dean_name || 'غير مسجل' }}</p>
             <p style="margin-top: 10px;">{{ college.description }}</p>
@@ -38,14 +44,15 @@
 
           <div class="card-actions">
             <button class="btn-icon btn-edit" title="تعديل"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon btn-delete" @click="deleteConfirm(college.id)" title="حذف"><i class="fas fa-trash"></i></button>
+            <button class="btn-icon btn-delete" @click="deleteCollege(college.id)" title="حذف">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
         </div>
 
         <div v-if="colleges.length === 0" class="empty-msg">
-          <i class="fas fa-folder-open" style="font-size: 50px; margin-bottom: 15px;"></i>
+          <i class="fas fa-folder-open"></i>
           <p>لا توجد كليات مضافة حالياً في قاعدة البيانات.</p>
-          <p><small>تأكدي من تشغيل السيرفر والـ API</small></p>
         </div>
       </div>
     </div>
@@ -63,28 +70,38 @@ export default {
   name: 'CollegesDisplay',
   data() {
     return {
-      colleges: [], // المصفوفة اللي حتتعبى من الـ API
+      colleges: [],
       loading: true,
+      errorMessage: null, // لمتابعة أخطاء الـ API
     }
   },
   mounted() {
     this.fetchColleges();
   },
   methods: {
+    // جلب البيانات مع التعامل مع الخطأ
     async fetchColleges() {
+      this.loading = true;
+      this.errorMessage = null;
       try {
-        // جربي بالرابط امتاعك توا، ويوم التسليم حطي رابط صاحبتك هنا
         const response = await axios.get('http://127.0.0.1:8000/api/colleges');
         this.colleges = response.data;
       } catch (error) {
-        console.error("حدث خطأ أثناء جلب البيانات:", error);
+        this.errorMessage = "حدث خطأ أثناء الاتصال بالخادم (API Error).";
       } finally {
         this.loading = false;
       }
     },
-    deleteConfirm(id) {
+    // الحذف الفعلي (التكامل المباشر)
+    async deleteCollege(id) {
       if(confirm('هل أنتِ متأكدة من حذف هذه الكلية؟')) {
-        console.log('سيتم إرسال طلب حذف للـ API للكلية رقم: ' + id);
+        try {
+          await axios.delete(`http://127.0.0.1:8000/api/colleges/${id}`);
+          this.colleges = this.colleges.filter(c => c.id !== id);
+          alert('تم الحذف بنجاح');
+        } catch (error) {
+          alert('تعذر الحذف، قد يكون هناك مشكلة في الـ API');
+        }
       }
     }
   }
@@ -92,108 +109,56 @@ export default {
 </script>
 
 <style scoped>
-/* التنسيقات امتاعك اللي بعتيها مع تعديلات بسيطة للـ Vue */
-:root {
-    --primary-color: #1B5E20;
-    --secondary-color: #4CAF50;
-    --accent-color: #F9A825;
-    --bg-color: #f4f7f6;
+/* التنسيقات متاعك مع إضافات بسيطة للـ Error و Spinner */
+.main-wrapper { background: #f4f7f6; 
+min-height: 100vh;
+ direction: rtl;
+  font-family: sans-serif; 
+  }
+header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; padding: 10px 50px; background: white; border-bottom: 3px solid #4CAF50; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+.logo img { height: 70px; 
 }
-
-.main-wrapper { 
-    background: #f4f7f6; 
-    min-height: 100vh;
-    direction: rtl;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.title h1 { margin: 0; 
+font-size: 24px; color: #1B5E20; 
+text-align: center; 
 }
-
-header {
-    display: grid; 
-    grid-template-columns: auto 1fr auto; 
-    align-items: center;
-    padding: 10px 50px; 
-    background: white;
-    border-bottom: 3px solid #4CAF50;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+.icons a { text-decoration: none; 
+margin-right: 20px; font-size: 20px; 
+color: #666; 
 }
-
-.logo img { height: 70px; }
-.title h1 { margin: 0; font-size: 24px; color: #1B5E20; text-align: center; }
-
-.icons a { text-decoration: none; margin-right: 20px; font-size: 20px; color: #666; transition: 0.3s; }
-.icons a:hover { color: #4CAF50; }
-
-.container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
-
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.btn-add {
-    background: #4CAF50;
-    color: white;
-    padding: 12px 25px;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-}
-
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 25px;
-}
-
-.college-card {
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    transition: 0.3s;
-    border-top: 5px solid #4CAF50;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
+.container { max-width: 1100px; 
+margin: 40px auto;
+ padding: 0 20px; 
+ }
+.page-header { display: flex; 
+justify-content: space-between; 
+align-items: center;
+ margin-bottom: 30px;
+  }
+.btn-add { background: #4CAF50;
+ color: white; padding: 12px 25px; 
+ border-radius: 50px; text-decoration: none; 
+ font-weight: bold; display: flex; align-items: center; 
+ gap: 10px; 
+ }
+.cards-grid { display: grid; 
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+gap: 25px; }
+.college-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; border-top: 5px solid #4CAF50; }
 .college-card:hover { transform: translateY(-10px); }
-
 .card-content { padding: 25px; text-align: right; }
 .card-content i { font-size: 40px; color: #F9A825; margin-bottom: 15px; display: block; }
-.card-content h4 { margin: 0 0 10px 0; font-size: 20px; color: #1B5E20; }
-.card-content p { color: #555; font-size: 14px; margin: 5px 0; line-height: 1.6; }
-
-.card-actions {
-    background: #f9f9f9;
-    padding: 15px 25px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    border-top: 1px solid #eee;
-}
-
+.card-content h4 { color: #1B5E20; margin-bottom: 10px; }
+.card-actions { background: #f9f9f9; padding: 15px 25px; display: flex; justify-content: flex-end; gap: 15px; border-top: 1px solid #eee; }
 .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; }
 .btn-edit { color: #1E88E5; }
 .btn-delete { color: #e53935; }
-
-.empty-msg {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 60px;
-    background: white;
-    border-radius: 15px;
-    color: #888;
-    border: 2px dashed #ccc;
-}
-
-footer { text-align: center; padding: 40px; color: #aaa; font-size: 13px; }
-
+.empty-msg { grid-column: 1 / -1; text-align: center; padding: 60px; background: white; border-radius: 15px; color: #888; border: 2px dashed #ccc; }
+.empty-msg i { font-size: 50px; margin-bottom: 15px; display: block; }
+.error-msg { text-align: center; color: #d32f2f; background: #ffebee; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.btn-retry { background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
 .text-center { text-align: center; padding: 50px; }
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+footer { text-align: center; padding: 40px; color: #aaa; }
 </style>

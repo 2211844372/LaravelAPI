@@ -4,76 +4,76 @@ namespace App\Http\Controllers;
 
 use App\Models\College;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class CollegeController extends Controller
 {
-
-
-
-
-
-
+    // 1. عرض صفحة الـ Frontend (الـ Blade)
     public function index()
-{
-    // هادي الصفحة اللي حتعرض الـ Vue
-    return view('manage'); // تأكدي إن ملف الـ Blade اسمه manage.blade.php
-}
-    /**
-     * Display a listing of the resource.
-     */
-   public function indexApi()
-{
-    // هادي بتجيب كل الكليات من الداتابيز وتبعثهم كـ نص JSON
-    $colleges = \App\Models\College::all(); 
-    return response()->json($colleges);
-}
-
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
     {
-        //
+        return view('manage'); 
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-   public function store(Request $request) {
-    $college = College::create($request->all());
-    return response()->json($college);
-}
-    /**
-     * Display the specified resource.
-     */
-    public function show(College $college)
+    // 2. الـ API لجلب البيانات (العرض فقط)
+    public function indexApi()
     {
-        //
+        // جلب كل الكليات
+        $colleges = College::all();
+        
+        // الرد بـ JSON مع حالة 200 (Success) - حسب معايير 
+        return response()->json($colleges, 200);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(College $college)
+    // 3. إضافة كلية (الـ API اللي حتستخدمه زميلتك)
+    public function store(Request $request)
     {
-        //
+        // الـ Validation: أهم نقطة عند الدكتور (الفقرة 5.1)
+        $validator = Validator::make($request->all(), [
+            'name'         => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'icon'         => 'nullable|string',
+            'founded_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'dean_name'    => 'nullable|string|max:255',
+            'email'        => 'nullable|email|max:255',
+        ]);
+
+        // لو البيانات غلط، نرجع خطأ واضح 422 (Error Handling)
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation Failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $college = College::create($request->all());
+        
+        // حالة 201 تعني Created بنجاح
+        return response()->json($college, 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-   public function update(Request $request, $id) {
-    $college = College::findOrFail($id);
-    $college->update($request->all());
-    return response()->json($college);
-}
+    // 4. تحديث البيانات
+    public function update(Request $request, $id)
+    {
+        $college = College::find($id);
+        
+        if (!$college) {
+            return response()->json(['message' => 'College not found'], 404);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-  public function destroy($id) {
-    College::destroy($id);
-    return response()->json(['message' => 'Deleted successfully']);
-}
+        $college->update($request->all());
+        return response()->json($college, 200);
+    }
+
+    // 5. الحذف
+    public function destroy($id)
+    {
+        $college = College::find($id);
+
+        if (!$college) {
+            return response()->json(['message' => 'College not found'], 404);
+        }
+
+        $college->delete();
+        return response()->json(['message' => 'Deleted successfully'], 200);
+    }
 }
