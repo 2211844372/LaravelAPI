@@ -7,14 +7,27 @@ use Illuminate\Http\Request;
 
 class CollegeController extends Controller
 {
+
+
+
+
+
+
+    public function index()
+{
+    // هادي الصفحة اللي حتعرض الـ Vue
+    return view('manage'); // تأكدي إن ملف الـ Blade اسمه manage.blade.php
+}
     /**
      * Display a listing of the resource.
      */
-    public function index()
+   public function indexApi()
 {
-    $colleges = \App\Models\College::all();
-    return view('manage', compact('colleges'));
+    // هادي بتجيب كل الكليات من الداتابيز وتبعثهم كـ نص JSON
+    $colleges = \App\Models\College::all(); 
+    return response()->json($colleges);
 }
+
 
     /**
      * Show the form for creating a new resource.

@@ -2,15 +2,13 @@
 use App\Http\Controllers\CollegeController;
 use Illuminate\Support\Facades\Route;
 
+// 1. رابط الصفحة الرئيسية (Home)
 Route::get('/', function () {
-    return view('welcome');
+    return view('home'); 
 });
 
-Route::get('/api/stats', [StatsController::class, 'index']);
-Route::get('/', function () {
-    return view('home'); // اسم الملف home.blade.php
-});
+// 2. رابط صفحة إدارة الكليات (هذا اللي تبيه يفتح صفحة الـ Vue)
+Route::get('/manage', [CollegeController::class, 'index']);
 
-
-
- Route::get('/manage', [CollegeController::class, 'index']);
+// 3. أي روابط أخرى (زي الإحصائيات لو عندك ملف StatsController)
+// Route::get('/api/stats', [StatsController::class, 'index']);
