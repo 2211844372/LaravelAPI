@@ -40,11 +40,10 @@ class CollegeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
-    }
-
+   public function store(Request $request) {
+    $college = College::create($request->all());
+    return response()->json($college);
+}
     /**
      * Display the specified resource.
      */
@@ -64,16 +63,17 @@ class CollegeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, College $college)
-    {
-        //
-    }
+   public function update(Request $request, $id) {
+    $college = College::findOrFail($id);
+    $college->update($request->all());
+    return response()->json($college);
+}
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(College $college)
-    {
-        //
-    }
+  public function destroy($id) {
+    College::destroy($id);
+    return response()->json(['message' => 'Deleted successfully']);
+}
 }
